@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PDF Q&A — Simple UI</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --accent:#2563eb;
+      --muted:#6b7280;
+      --success:#059669;
+      --danger:#ef4444;
+      --radius:12px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),#fff);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      color:#111827;
+    }
+
+    .container{
+      width:100%;
+      max-width:1100px;
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:0 8px 30px rgba(16,24,40,0.06);
+      padding:20px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    header{
+      grid-column:1/-1;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    header h1{
+      font-size:18px;
+      margin:0;
+    }
+    header p{margin:0;color:var(--muted);font-size:13px}
+
+    .left {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .dropzone{
+      border:2px dashed #e6eefb;
+      border-radius:10px;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      min-height:150px;
+      background:linear-gradient(180deg, rgba(37,99,235,0.03), rgba(0,0,0,0.00));
+      transition:all .15s ease;
+      cursor:pointer;
+    }
+    .dropzone.dragover{
+      border-color:var(--accent);
+      transform:translateY(-2px);
+      box-shadow:0 6px 18px rgba(37,99,235,0.06);
+    }
+
+    .dropzone small{color:var(--muted);font-size:13px}
+    .controls{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .btn{
+      background:var(--accent);
+      color:white;
+      border:none;
+      padding:8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      box-shadow:0 6px 12px rgba(37,99,235,0.08);
+    }
+    .btn.ghost{
+      background:transparent;
+      color:var(--accent);
+      border:1px solid rgba(37,99,235,0.12);
+      box-shadow:none;
+      font-weight:600;
+    }
+    .info{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    textarea, input[type="text"]{
+      width:100%;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid #e6eefb;
+      font-size:14px;
+      resize:vertical;
+      min-height:72px;
+    }
+
+    .submit-row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .pdf-preview{
+      width:100%;
+      height:560px;
+      border-radius:10px;
+      overflow:hidden;
+      background:linear-gradient(180deg,#fff,#fbfdff);
+      border:1px solid #eef4ff;
+    }
+    .pdf-frame{
+      width:100%;
+      height:100%;
+      border:0;
+    }
+
+    .right {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .answer {
+      min-height:250px;
+      max-height: 400px; 
+      padding:14px;
+      border-radius:10px;
+      border:1px solid #eef2ff;
+      background:#fcfeff;
+      font-size:14px;
+      line-height:1.45;
+      color:#111827;
+      overflow-y:auto;
+      white-space:pre-wrap;
+    }
+
+    .meta{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:center;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .status {
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    .loader {
+      width:18px;height:18px;border-radius:50%;
+      border:3px solid rgba(0,0,0,0.06);
+      border-top-color:var(--accent);
+      animation:spin .9s linear infinite;
+      display:inline-block;
+    }
+    @keyframes spin {to{transform:rotate(360deg)}}
+
+    .file-meta{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .chip{
+      padding:6px 8px;
+      border-radius:999px;
+      background:#f1f8ff;
+      color:var(--accent);
+      font-weight:600;
+      font-size:13px;
+    }
+
+    .note{font-size:13px;color:var(--muted)}
+
+    /* responsive */
+    @media (max-width:980px){
+      .container{grid-template-columns:1fr; padding:16px}
+      .pdf-preview{height:360px}
+    }
+  </style>
+</head>
+<body>
+  <main class="container" role="main">
+    <header>
+      <div>
+        <h1>PDF Q&A</h1>
+        <p>Upload a PDF, type a question to get an answer.</p>
+      </div>
+      <!-- <div class="meta" aria-hidden="true">
+        <div class="note">Tip: Backend expects a multipart/form-data POST with `pdf` and `question` fields.</div>
+      </div> -->
+    </header>
+
+    <section class="left" aria-label="Inputs">
+      <div id="dropzone" class="dropzone" tabindex="0">
+        <div class="file-meta" id="fileMeta">
+          <div class="chip" id="fileChip">No file chosen</div>
+        </div>
+        <small>Drag & drop a PDF here, or click to choose a file.</small>
+
+        <input id="fileInput" type="file" accept="application/pdf" style="display:none" />
+      </div>
+
+      <div>
+        <label for="question">Your question</label>
+        <textarea id="question" placeholder="e.g. What does clause 3.2 say about payment terms?"></textarea>
+      </div>
+
+      <div class="submit-row">
+        <button id="sendBtn" class="btn">Ask</button>
+        <button id="clearBtn" class="btn ghost" type="button">Clear</button>
+        <div style="margin-left:auto" id="statusArea" class="status" aria-live="polite"></div>
+      </div>
+
+      <!-- <div class="info">
+        <strong>Note:</strong> This page only provides the front-end. You'll need a server endpoint (default <code>/api/ask</code>) that accepts `pdf` (file) and `question` (text) and returns a JSON response like:
+        <pre style="display:inline-block;background:#f8fafc;padding:6px;border-radius:6px;margin:6px 0">{"answer":"...text...","source": "...optional source info..."}</pre>
+      </div> -->
+
+      <div>
+        <label>Answer</label>
+        <div id="answerBox" class="answer">No answer yet — ask a question to get started.</div>
+      </div>
+    </section>
+
+    <section class="right" aria-label="Preview and answer">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <label>PDF preview</label>
+        </div>
+        <div style="text-align:right">
+          <span id="pdfInfo" class="note">Rendered by browser (if supported)</span>
+        </div>
+      </div>
+
+      <div class="pdf-preview" id="previewContainer" aria-live="polite">
+        <!-- PDF will be embedded here -->
+        <object id="pdfFrame" class="pdf-frame" data="" type="application/pdf" aria-label="PDF preview">
+          <div style="padding:18px;color:var(--muted);">PDF preview is not supported in this browser. The file will still be uploaded.</div>
+        </object>
+      </div>
+
+      
+    </section>
+  </main>
+
+  <script>
+    // Elements
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileChip = document.getElementById('fileChip');
+    const pdfFrame = document.getElementById('pdfFrame');
+    const previewContainer = document.getElementById('previewContainer');
+    const questionEl = document.getElementById('question');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusArea = document.getElementById('statusArea');
+    const answerBox = document.getElementById('answerBox');
+
+    let selectedFile = null;
+
+    // Helpers
+    function setStatus(text, busy=false, danger=false){
+      statusArea.innerHTML = '';
+      if(busy){
+        const loader = document.createElement('span');
+        loader.className='loader';
+        statusArea.appendChild(loader);
+      }
+      const span = document.createElement('span');
+      span.textContent = (text ? ' ' + text : '');
+      if(danger) span.style.color = 'var(--danger)';
+      statusArea.appendChild(span);
+    }
+
+    function showFile(file){
+      selectedFile = file;
+      fileChip.textContent = file.name + ' • ' + Math.round(file.size/1024) + ' KB';
+      // Render in object/embed if browser supports it
+      try{
+        const url = URL.createObjectURL(file);
+        pdfFrame.data = url;
+        pdfFrame.type = 'application/pdf';
+        pdfFrame.onload = () => {/* no-op */}
+      }catch(e){
+        // fallback: no preview
+        previewContainer.innerHTML = '<div style="padding:18px;color:var(--muted)">PDF preview not available.</div>';
+      }
+    }
+
+    // Drag & drop handlers
+    dropzone.addEventListener('click', ()=> fileInput.click());
+    dropzone.addEventListener('keydown', (e)=> { if(e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    dropzone.addEventListener('dragover', (e)=> { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e)=> {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if(file) handleFile(file);
+    });
+
+    fileInput.addEventListener('change', (e)=> {
+      const file = e.target.files && e.target.files[0];
+      if(file) handleFile(file);
+    });
+
+    function handleFile(file){
+      if(file.type !== 'application/pdf'){
+        alert('Please choose a PDF file.');
+        return;
+      }
+      showFile(file);
+    }
+
+    // Clear UI
+    clearBtn.addEventListener('click', ()=> {
+      selectedFile = null;
+      fileChip.textContent = 'No file chosen';
+      pdfFrame.data = '';
+      questionEl.value = '';
+      answerBox.textContent = 'No answer yet — ask a question to get started.';
+      setStatus('');
+    });
+
+    // Send to server
+    sendBtn.addEventListener('click', async ()=> {
+      const question = questionEl.value.trim();
+      if(!selectedFile){
+        alert('Please upload a PDF first.');
+        return;
+      }
+      if(!question){
+        alert('Please enter a question.');
+        return;
+      }
+
+      setStatus('Processing...', true);
+      answerBox.textContent = '';
+
+      try{
+        const form = new FormData();
+        form.append('file', selectedFile, selectedFile.name);
+        form.append('question', question);
+
+        // Default endpoint - change if needed
+        const res = await fetch("http://localhost:8070/ask?query=" + question, {
+          method: 'POST',
+          body: form
+        });
+
+        if(!res.ok){
+          const txt = await res.text();
+          setStatus('Error', false, true);
+          answerBox.textContent = 'Server error: ' + res.status + ' — ' + txt;
+          return;
+        }
+
+        // Expect JSON { answer: "...", source: "optional" }
+        const data = await res.json();
+        setStatus('Done', false);
+        const answer = data.answer ?? data.reply ?? data.result ?? 'No answer returned.';
+        answerBox.textContent = answer;
+
+        if(data.source){
+          const src = document.createElement('div');
+          src.style.marginTop = '10px';
+          src.style.fontSize = '13px';
+          src.style.color = 'var(--muted)';
+          src.textContent = 'Source: ' + data.source;
+          answerBox.appendChild(src);
+        }
+
+      }catch(err){
+        setStatus('Network error', false, true);
+        answerBox.textContent = 'Network/JS error: ' + (err.message || err);
+      }
+    });
+
+    // Optional: keyboard shortcut Ctrl+Enter to send
+    questionEl.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+        sendBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
