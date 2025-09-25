@@ -45,7 +45,7 @@ RAG/
    - Navigate to frontend.html and open in a browser.
 
 # Example workflow
-1. Upload contract.pdf via frontend.
+1. Upload example.pdf via frontend.
 2. Ask question.
 3. Backend:
      - Extracts and chunks text
