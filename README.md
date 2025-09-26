@@ -54,3 +54,4 @@ RAG/
      - Sends context to Ollama (Llama 3.1:8b)
 4. Answer is displayed in the frontend.
    
+<img width="1103" height="843" alt="image" src="https://github.com/user-attachments/assets/3a17a590-92b1-4e25-8153-0dbf70f052a5" />
